@@ -26,29 +26,33 @@ include <l_system_core.scad>;
  * @param poly        Fill the path as a polygon instead of drawing lines (default false).
  */
 module L_System2D(start, rules, n, angle, w, draw_chars, move_chars, heading, startpos, poly) {
-  debug = is_undef($ls_debug) ? false : $ls_debug;
-  tuple = is_undef(rules) && is_list(start);
-  p = tuple && len(start) > 2 ? start[2] : [];
-  pick = function(v, k, d) !is_undef(v) ? v : _ls_param(p, k, d);
+    debug = is_undef($ls_debug) ? false : $ls_debug;
+    tuple = is_undef(rules) && is_list(start);
+    p = tuple && len(start) > 2 ? start[2] : [];
+    pick = function(v, k, d) !is_undef(v) ? v : _ls_param(p, k, d);
 
-  // The assert sits in the assignment so it runs before anything uses n.
-  _n = let (v = pick(n, "n", undef))
+    // The assert sits in the assignment so it runs before anything uses n.
+    _n = let (v = pick(n, "n", undef))
     assert(!is_undef(v), "L_System2D: n is required (no iteration count given or found in the grammar tuple)") v;
-  _angle = pick(angle, "angle", 90);
-  _w = pick(w, "w", 0.4);
-  _poly = pick(poly, "poly", false);
+    _angle = pick(angle, "angle", 90);
+    _w = pick(w, "w", 0.4);
+    _poly = pick(poly, "poly", false);
 
-  tables = create_lookup(tuple ? start[0] : start, tuple ? start[1] : rules, pick(draw_chars, "draw_chars", "F"),
-                         pick(move_chars, "move_chars", "M"));
-  if (debug) echo("Tables:", tables);
-  instrs = apply_rules(tuple ? start[0] : start, tables[0], tables[1], _n);
-  if (debug) echo("Instructions:", instrs);
-  coords = generate_coords(instrs, _angle, pick(startpos, "startpos", [0, 0]), pick(heading, "heading", 0), _poly, _w);
-  if (debug) echo("Coords:", coords);
+    tables = create_lookup(
+        tuple ? start[0] : start, tuple ? start[1] : rules, pick(draw_chars, "draw_chars", "F"),
+        pick(move_chars, "move_chars", "M")
+    );
+    if (debug) echo("Tables:", tables);
+    instrs = apply_rules(tuple ? start[0] : start, tables[0], tables[1], _n);
+    if (debug) echo("Instructions:", instrs);
+    coords = generate_coords(instrs, _angle, pick(startpos, "startpos", [0, 0]), pick(heading, "heading", 0), _poly, _w);
+    if (debug) echo("Coords:", coords);
 
-  if (_poly) polygon(coords);
-  else segmented_lines(coords, _w);
-  if (debug) echo("Done!");
+    if (_poly)
+        polygon(coords);
+    else
+        segmented_lines(coords, _w);
+    if (debug) echo("Done!");
 }
 
 /**
@@ -70,14 +74,10 @@ module L_System2D(start, rules, n, angle, w, draw_chars, move_chars, heading, st
 // so "]" restores p and h before popping st, and d is only recomputed when h
 // changes.
 function generate_coords(instrs, angle, startpos, heading, poly, w) =
-  let (n = len(instrs))
-  [for (i = 0, c = instrs[0], p = startpos, h = heading, d = [cos(heading), sin(heading)], st = []; i < n;
-        p = c == "F" || c == "M" ? p + d : c == "]" ? _top(st)[0] : p,
-        h = c == "+" ? h + angle : c == "-" ? h - angle : c == "]" ? _top(st)[1] : h,
-        d = c == "+" || c == "-" || c == "]" ? [cos(h), sin(h)] : d,
-        st = c == "[" ? _push(st, [p, h]) : c == "]" ? _pop(st) : st,
-        i = i + 1, c = instrs[i])
-    if (c == "F") each (poly ? [p] : let (q = p + d) [p.x, p.y, q.x, q.y])];
+    let (n = len(instrs))
+    [
+            for(i = 0,c = instrs[0],p = startpos,h = heading,d = [cos(heading), sin(heading)],st = [];i < n;p = c == "F" || c == "M" ? p + d : c == "]" ? _top(st)[0] : p,h = c == "+" ? h + angle : c == "-" ? h - angle : c == "]" ? _top(st)[1] : h,d = c == "+" || c == "-" || c == "]" ? [cos(h), sin(h)] : d,st = c == "[" ? _push(st, [p, h]) : c == "]" ? _pop(st) : st,i = i + 1,c = instrs[i]) if (c == "F") each (poly ? [p] : let (q = p + d) [p.x, p.y, q.x, q.y]),
+    ];
 
 // ---------------- Drawing ----------------
 
@@ -89,10 +89,10 @@ function generate_coords(instrs, angle, startpos, heading, poly, w) =
  * end on the last when $ls_rounded is on.
  */
 module segmented_lines(l, w = 0.1) {
-  count = floor(len(l) / 4);
-  _chunked(count) for (j = $chunk) line(l[4 * j], l[4 * j + 1], l[4 * j + 2], l[4 * j + 3], w);
-  if ((is_undef($ls_rounded) ? true : $ls_rounded) && count > 0)
-    translate([l[4 * count - 2], l[4 * count - 1]]) circle(d = w, $fn = $fn > 0 ? $fn : 16);
+    count = floor(len(l) / 4);
+    _chunked(count)for (j = $chunk) line(l[4 * j], l[4 * j + 1], l[4 * j + 2], l[4 * j + 3], w);
+    if ( (is_undef($ls_rounded) ? true : $ls_rounded) && count > 0)
+        translate([l[4 * count - 2], l[4 * count - 1]]) circle(d=w, $fn=$fn > 0 ? $fn : 16);
 }
 
 /**
@@ -102,8 +102,8 @@ module segmented_lines(l, w = 0.1) {
  * start when $ls_rounded is on.
  */
 module line(xa, ya, xb, yb, w = 0.1) {
-  translate([xa, ya]) {
-    if (is_undef($ls_rounded) ? true : $ls_rounded) circle(d = w, $fn = $fn > 0 ? $fn : 16);
-    rotate(atan2(yb - ya, xb - xa)) translate([0, -w / 2]) square([norm([xb - xa, yb - ya]), w]);
-  }
+    translate([xa, ya]) {
+        if (is_undef($ls_rounded) ? true : $ls_rounded) circle(d=w, $fn=$fn > 0 ? $fn : 16);
+        rotate(atan2(yb - ya, xb - xa)) translate([0, -w / 2]) square([norm([xb - xa, yb - ya]), w]);
+    }
 }

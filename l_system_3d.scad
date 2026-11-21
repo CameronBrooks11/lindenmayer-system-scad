@@ -23,19 +23,20 @@ function _ls3d_valid_chars() = "FM-+[]&^\\/|!{}.;,";
 
 // Rotation matrices for premultiplying a row-major frame M = [H, L, U]:
 // M' = R * M rotates the frame about its own (local) axis.
-function _rot_u(a) = [ [ cos(a), sin(a), 0 ], [ -sin(a), cos(a), 0 ], [ 0, 0, 1 ] ];
-function _rot_l(a) = [ [ cos(a), 0, -sin(a) ], [ 0, 1, 0 ], [ sin(a), 0, cos(a) ] ];
-function _rot_h(a) = [ [ 1, 0, 0 ], [ 0, cos(a), sin(a) ], [ 0, -sin(a), cos(a) ] ];
+function _rot_u(a) = [[cos(a), sin(a), 0], [-sin(a), cos(a), 0], [0, 0, 1]];
+function _rot_l(a) = [[cos(a), 0, -sin(a)], [0, 1, 0], [sin(a), 0, cos(a)]];
+function _rot_h(a) = [[1, 0, 0], [0, cos(a), sin(a)], [0, -sin(a), cos(a)]];
 
 // Frame update for one symbol: rotation symbols premultiply, others leave M.
-function _step_rot(ch, a, M) = (ch == "+")   ? _rot_u(a) * M
-                               : (ch == "-") ? _rot_u(-a) * M
-                               : (ch == "&") ? _rot_l(a) * M
-                               : (ch == "^") ? _rot_l(-a) * M
-                               : (ch == "\\") ? _rot_h(a) * M
-                               : (ch == "/") ? _rot_h(-a) * M
-                               : (ch == "|") ? _rot_u(180) * M
-                                             : M;
+function _step_rot(ch, a, M) =
+    (ch == "+") ? _rot_u(a) * M
+    : (ch == "-") ? _rot_u(-a) * M
+    : (ch == "&") ? _rot_l(a) * M
+    : (ch == "^") ? _rot_l(-a) * M
+    : (ch == "\\") ? _rot_h(a) * M
+    : (ch == "/") ? _rot_h(-a) * M
+    : (ch == "|") ? _rot_u(180) * M
+    : M;
 
 // Rodrigues rotation of vector v about unit axis k by angle a (degrees).
 function _rot_about(v, k, a) = v * cos(a) + cross(k, v) * sin(a) + k * (k * v) * (1 - cos(a));
@@ -45,10 +46,15 @@ function _rot_about(v, k, a) = v * cos(a) + cross(k, v) * sin(a) + k * (k * v) *
 // each repel point. undef when there is no net influence (empty lists, or
 // cancelling / coincident points).
 function _influence_dir(pos, attract, repel) =
-    let(a = is_undef(attract) ? [] : attract, r = is_undef(repel) ? [] : repel,
-        v = concat([for (p = a) let(d = p - pos, m = norm(d)) if (m > 1e-9) d / m],   // toward attractors
-                   [for (p = r) let(d = pos - p, m = norm(d)) if (m > 1e-9) d / m]))   // away from repellers
-        len(v) == 0 ? undef : let(s = _sum(v), m = norm(s)) m < 1e-9 ? undef : s / m;
+    let (
+        a = is_undef(attract) ? [] : attract,
+        r = is_undef(repel) ? [] : repel,
+        v = concat(
+            [for (p = a) let (d = p - pos, m = norm(d)) if (m > 1e-9) d / m], // toward attractors
+            [for (p = r) let (d = pos - p, m = norm(d)) if (m > 1e-9) d / m]
+        )
+    ) // away from repellers
+    len(v) == 0 ? undef : let (s = _sum(v), m = norm(s)) m < 1e-9 ? undef : s / m;
 
 // Tropism: bend the frame toward a target direction by angle e*|H x T| about
 // the axis H x T (ABOP: torque = H cross T, applied after each drawn segment).
@@ -57,15 +63,18 @@ function _influence_dir(pos, attract, repel) =
 // when there is no net target, or when H is parallel to the target.
 function _tropism_bend(M, pos, T, attract, repel, e) =
     (e == 0) ? M
-             : let(Tp = _influence_dir(pos, attract, repel),
-                   Ts = (is_undef(T) ? [ 0, 0, 0 ] : T) + (is_undef(Tp) ? [ 0, 0, 0 ] : Tp), nm = norm(Ts)) //
-               nm < 1e-9 //
-                   ? M
-                   : let(Tn = Ts / nm, axis = cross(M[0], Tn), m = norm(axis)) //
-                     m < 1e-9 //
-                         ? M
-                         : let(k = axis / m, a = e * m) //
-                           [ _rot_about(M[0], k, a), _rot_about(M[1], k, a), _rot_about(M[2], k, a) ];
+    : let (
+        Tp = _influence_dir(pos, attract, repel),
+        Ts = (is_undef(T) ? [0, 0, 0] : T) + (is_undef(Tp) ? [0, 0, 0] : Tp),
+        nm = norm(Ts)
+    ) //
+    nm < 1e-9 //
+    ? M
+    : let (Tn = Ts / nm, axis = cross(M[0], Tn), m = norm(axis)) //
+    m < 1e-9 //
+    ? M
+    : let (k = axis / m, a = e * m) //
+    [_rot_about(M[0], k, a), _rot_about(M[1], k, a), _rot_about(M[2], k, a)];
 
 /**
  * L_System3D
@@ -101,9 +110,24 @@ function _tropism_bend(M, pos, T, attract, repel, e) =
  * @param branch_taper    Per-F width multiplier for smooth cone tapering; child
  *                     branches inherit the parent tip width (default: 1, none).
  */
-module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, taper, tropism, tropism_strength,
-                 leaf_thickness, palette, attract_points, repel_points, branch_taper)
-{
+module L_System3D(
+    start,
+    rules,
+    n,
+    angle,
+    w,
+    draw_chars,
+    move_chars,
+    startpos,
+    taper,
+    tropism,
+    tropism_strength,
+    leaf_thickness,
+    palette,
+    attract_points,
+    repel_points,
+    branch_taper
+) {
     debug = is_undef($ls_debug) ? false : $ls_debug;
 
     // Grammar tuple dispatch: is_list() is false for the string axiom form
@@ -113,13 +137,13 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
 
     // Explicit argument > tuple param > library default
     // The assert sits in the assignment so it runs before anything uses n.
-    _n = let(v = !is_undef(n) ? n : _ls_param(p, "n", undef))
-        assert(!is_undef(v), "L_System3D: n is required (no iteration count given or found in the grammar tuple)") v;
+    _n = let (v = !is_undef(n) ? n : _ls_param(p, "n", undef))
+    assert(!is_undef(v), "L_System3D: n is required (no iteration count given or found in the grammar tuple)") v;
     _angle = !is_undef(angle) ? angle : _ls_param(p, "angle", 90);
     _w = !is_undef(w) ? w : _ls_param(p, "w", 0.4);
     _draw = !is_undef(draw_chars) ? draw_chars : _ls_param(p, "draw_chars", "F");
     _move = !is_undef(move_chars) ? move_chars : _ls_param(p, "move_chars", "M");
-    _startpos = !is_undef(startpos) ? startpos : _ls_param(p, "startpos", [ 0, 0, 0 ]);
+    _startpos = !is_undef(startpos) ? startpos : _ls_param(p, "startpos", [0, 0, 0]);
     _taper = !is_undef(taper) ? taper : _ls_param(p, "taper", 0.7);
     _tropism = !is_undef(tropism) ? tropism : _ls_param(p, "tropism", undef);
     _tstrength = !is_undef(tropism_strength) ? tropism_strength : _ls_param(p, "tropism_strength", 0.22);
@@ -128,7 +152,6 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
     _attract = !is_undef(attract_points) ? attract_points : _ls_param(p, "attract_points", undef);
     _repel = !is_undef(repel_points) ? repel_points : _ls_param(p, "repel_points", undef);
     _btaper = !is_undef(branch_taper) ? branch_taper : _ls_param(p, "branch_taper", 1);
-
 
     // First create the lookup tables for rule replacement
     tables = create_lookup(_axiom, _rules, _draw, _move, _ls3d_valid_chars());
@@ -175,14 +198,22 @@ module L_System3D(start, rules, n, angle, w, draw_chars, move_chars, startpos, t
  *                   polygons (from "{" "." "}"). The color index (";" increments,
  *                   "," decrements, saved/restored by "[" "]") is a palette slot.
  */
-function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, e = 0, attract = undef, repel = undef,
-                            branch_taper = 1) =
-    let(n = len(instrs), s0 = [ startpos, [ [ 0, 0, 1 ], [ 0, 1, 0 ], [ -1, 0, 0 ] ], w, 0, [], [] ])
-    [for (i = 0, s = s0; i < n;
-          s = _turtle3(s, instrs[i], angle, taper, branch_taper, tropism, e, attract, repel), i = i + 1)
-        let(c = instrs[i])
-        if (c == "F") [ "seg", s[0], s[0] + s[1][0], s[2], s[2] * branch_taper, s[3] ]
-        else if (c == "}") [ "leaf", s[5], s[3] ]];
+function generate_coords_3d(
+    instrs,
+    angle,
+    startpos,
+    taper,
+    w,
+    tropism = undef,
+    e = 0,
+    attract = undef,
+    repel = undef,
+    branch_taper = 1
+) =
+    let (n = len(instrs), s0 = [startpos, [[0, 0, 1], [0, 1, 0], [-1, 0, 0]], w, 0, [], []])
+    [
+            for(i = 0,s = s0;i < n;s = _turtle3(s, instrs[i], angle, taper, branch_taper, tropism, e, attract, repel),i = i + 1) let (c = instrs[i]) if (c == "F") ["seg", s[0], s[0] + s[1][0], s[2], s[2] * branch_taper, s[3]] else if (c == "}") ["leaf", s[5], s[3]],
+    ];
 
 // One turtle step. The state is [position, frame, width, color index, saved
 // states, open polygon's vertices]. F moves along the heading, then bends the
@@ -190,17 +221,17 @@ function generate_coords_3d(instrs, angle, startpos, taper, w, tropism = undef, 
 // width by branch_taper; "[" saves position, frame, width and color, "]"
 // restores them; "{" starts a polygon and "." adds the current position to it.
 function _turtle3(s, c, angle, taper, bt, T, e, att, rep) =
-    let(P = s[0], M = s[1], W = s[2], C = s[3], st = s[4], V = s[5])
-    c == "F"   ? let(Q = P + M[0]) [ Q, _tropism_bend(M, Q, T, att, rep, e), W * bt, C, st, V ]
-    : c == "M" ? [ P + M[0], M, W, C, st, V ]
-    : c == "!" ? [ P, M, W * taper, C, st, V ]
-    : c == ";" ? [ P, M, W, C + 1, st, V ]
-    : c == "," ? [ P, M, W, C - 1, st, V ]
-    : c == "[" ? [ P, M, W, C, _push(st, [ P, M, W, C ]), V ]
-    : c == "]" ? let(t = _top(st)) [ t[0], t[1], t[2], t[3], _pop(st), V ]
-    : c == "{" ? [ P, M, W, C, st, [] ]
-    : c == "." ? [ P, M, W, C, st, concat(V, [P]) ]
-               : [ P, _step_rot(c, angle, M), W, C, st, V ];
+    let (P = s[0], M = s[1], W = s[2], C = s[3], st = s[4], V = s[5])
+    c == "F" ? let (Q = P + M[0]) [Q, _tropism_bend(M, Q, T, att, rep, e), W * bt, C, st, V]
+    : c == "M" ? [P + M[0], M, W, C, st, V]
+    : c == "!" ? [P, M, W * taper, C, st, V]
+    : c == ";" ? [P, M, W, C + 1, st, V]
+    : c == "," ? [P, M, W, C - 1, st, V]
+    : c == "[" ? [P, M, W, C, _push(st, [P, M, W, C]), V]
+    : c == "]" ? let (t = _top(st)) [t[0], t[1], t[2], t[3], _pop(st), V]
+    : c == "{" ? [P, M, W, C, st, []]
+    : c == "." ? [P, M, W, C, st, concat(V, [P])]
+    : [P, _step_rot(c, angle, M), W, C, st, V];
 
 // --------------------------------
 // Supporting Modules for Drawing
@@ -218,40 +249,34 @@ function _turtle3(s, c, angle, taper, bt, T, e, att, rep) =
  *                        index (preview only; OpenSCAD strips color on F6/export).
  *                        When undef, geometry is emitted uncolored, unchanged.
  */
-module segmented_lines_3d(items, leaf_thickness = 0.2, palette = undef)
-{
+module segmented_lines_3d(items, leaf_thickness = 0.2, palette = undef) {
     segs = [for (it = items) if (it[0] == "seg") it];
     leaves = [for (it = items) if (it[0] == "leaf") it];
 
     // OpenSCAD silently skips module for-loops over ranges > 10000 elements
     // (only a warning, empty geometry), so large lists must be rendered in chunks.
     rounded = is_undef($ls_rounded) ? true : $ls_rounded;
-    if (is_undef(palette))
-    {
+    if (is_undef(palette)) {
         // Uncolored path.
-        _chunked(len(segs)) for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3], segs[j][4]);
-        _chunked(len(leaves)) for (j = $chunk) _leaf(leaves[j][1], leaf_thickness);
-        if (rounded && len(segs) > 0)
-        {
+        _chunked(len(segs))for (j = $chunk) line_3d(segs[j][1], segs[j][2], segs[j][3], segs[j][4]);
+        _chunked(len(leaves))for (j = $chunk) _leaf(leaves[j][1], leaf_thickness);
+        if (rounded && len(segs) > 0) {
             last = segs[len(segs) - 1];
-            translate(last[2]) sphere(d = last[4], $fn = $fn > 0 ? $fn : 16);
+            translate(last[2]) sphere(d=last[4], $fn=$fn > 0 ? $fn : 16);
         }
-    }
-    else
-    {
+    } else {
         n = len(palette);
-        _chunked(len(segs)) for (j = $chunk) color(palette[_pidx(segs[j][5], n)]) line_3d(segs[j][1], segs[j][2], segs[j][3], segs[j][4]);
-        _chunked(len(leaves)) for (j = $chunk) color(palette[_pidx(leaves[j][2], n)]) _leaf(leaves[j][1], leaf_thickness);
-        if (rounded && len(segs) > 0)
-        {
+        _chunked(len(segs))for (j = $chunk) color(palette[_pidx(segs[j][5], n)]) line_3d(segs[j][1], segs[j][2], segs[j][3], segs[j][4]);
+        _chunked(len(leaves))for (j = $chunk) color(palette[_pidx(leaves[j][2], n)]) _leaf(leaves[j][1], leaf_thickness);
+        if (rounded && len(segs) > 0) {
             last = segs[len(segs) - 1];
-            color(palette[_pidx(last[5], n)]) translate(last[2]) sphere(d = last[4], $fn = $fn > 0 ? $fn : 16);
+            color(palette[_pidx(last[5], n)]) translate(last[2]) sphere(d=last[4], $fn=$fn > 0 ? $fn : 16);
         }
     }
 }
 
 // Wrap a color index into a palette of length n (handles negatives from ",").
-function _pidx(i, n) = ((i % n) + n) % n;
+function _pidx(i, n) = ( (i % n) + n) % n;
 
 /**
  * _leaf
@@ -263,15 +288,13 @@ function _pidx(i, n) = ((i % n) + n) % n;
  * @param pts   Polygon vertices [[x,y,z], ...].
  * @param t     Prism thickness (default: 0.2).
  */
-module _leaf(pts, t = 0.2)
-{
+module _leaf(pts, t = 0.2) {
     n = len(pts);
-    if (n >= 3)
-    {
-        nx = _sum([for (i = [0:n - 1]) (pts[i].y - pts[(i + 1) % n].y) * (pts[i].z + pts[(i + 1) % n].z)]);
-        ny = _sum([for (i = [0:n - 1]) (pts[i].z - pts[(i + 1) % n].z) * (pts[i].x + pts[(i + 1) % n].x)]);
-        nz = _sum([for (i = [0:n - 1]) (pts[i].x - pts[(i + 1) % n].x) * (pts[i].y + pts[(i + 1) % n].y)]);
-        nr = [ nx, ny, nz ];
+    if (n >= 3) {
+        nx = _sum([for (i = [0:n - 1]) (pts[i].y - pts[ (i + 1) % n].y) * (pts[i].z + pts[ (i + 1) % n].z)]);
+        ny = _sum([for (i = [0:n - 1]) (pts[i].z - pts[ (i + 1) % n].z) * (pts[i].x + pts[ (i + 1) % n].x)]);
+        nz = _sum([for (i = [0:n - 1]) (pts[i].x - pts[ (i + 1) % n].x) * (pts[i].y + pts[ (i + 1) % n].y)]);
+        nr = [nx, ny, nz];
         nm = norm(nr);
         if (nm > 1e-9) // skip degenerate (collinear) vertex runs
         {
@@ -280,8 +303,8 @@ module _leaf(pts, t = 0.2)
             bot = [for (p = pts) p - h];
             topf = [for (i = [0:n - 1]) i];
             botf = [for (i = [n - 1:-1:0]) i + n];
-            sides = [for (i = [0:n - 1])[ i, i + n, (i + 1) % n + n, (i + 1) % n ]];
-            polyhedron(points = concat(top, bot), faces = concat([topf], [botf], sides));
+            sides = [for (i = [0:n - 1]) [i, i + n, (i + 1) % n + n, (i + 1) % n]];
+            polyhedron(points=concat(top, bot), faces=concat([topf], [botf], sides));
         }
     }
 }
@@ -301,8 +324,7 @@ function _sum(v) = len(v) == 0 ? 0 : [for (x = v) 1] * v;
  * @param w0   Diameter at pa.
  * @param w1   Diameter at pb (default: w0, i.e. no taper).
  */
-module line_3d(pa, pb, w0, w1 = undef)
-{
+module line_3d(pa, pb, w0, w1 = undef) {
     we = is_undef(w1) ? w0 : w1;
     v = pb - pa;
     d = norm(v);
@@ -312,11 +334,10 @@ module line_3d(pa, pb, w0, w1 = undef)
     {
         b = acos(v.z / d); // inclination from +Z
         c = atan2(v.y, v.x); // azimuth; atan2(0,0)=0 covers the vertical case
-        translate(pa)
-        {
+        translate(pa) {
             if (rounded)
-                sphere(d = w0, $fn = fn);
-            rotate([ 0, b, c ]) cylinder(h = d, d1 = w0, d2 = we, $fn = fn);
+                sphere(d=w0, $fn=fn);
+            rotate([0, b, c]) cylinder(h=d, d1=w0, d2=we, $fn=fn);
         }
     }
 }

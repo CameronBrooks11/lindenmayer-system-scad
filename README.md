@@ -8,9 +8,9 @@ This library allows you to generate space-filling curves, fractal shapes, and 3D
 
 | | | |
 | --- | --- | --- |
-| ![Dragon curve](images/dragon_curve.png) | ![Fractal plant](images/fractal_plant.png) | ![3D Hilbert curve](images/hilbert_curve_3d.png) |
+| ![Dragon curve](assets/dragon_curve.png) | ![Fractal plant](assets/fractal_plant.png) | ![3D Hilbert curve](assets/hilbert_curve_3d.png) |
 | `dragon_curve` | `fractal_plant` | `hilbert_curve_3d` |
-| ![Tree with a per-level colour gradient](images/color_tree.png) | ![Weeping tree under gravity tropism](images/weeping_tree.png) | ![Printable tree on a base](images/printable_tree.png) |
+| ![Tree with a per-level colour gradient](assets/color_tree.png) | ![Weeping tree under gravity tropism](assets/weeping_tree.png) | ![Printable tree on a base](assets/printable_tree.png) |
 | `color_tree` | `weeping_tree` | `examples/printable_tree.scad` |
 
 ### Key Features

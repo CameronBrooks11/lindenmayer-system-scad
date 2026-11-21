@@ -2,9 +2,8 @@
 use <../l_systems.scad>;
 
 // Lévy Dragon
-module levy_dragon(n = 10, angle = 45, w = 0.4)
-{
+module levy_dragon(n = 10, angle = 45, w = 0.4) {
     L_System2D("F", ["F=+F--F+"], n, angle, w);
 }
 
-linear_extrude(1) levy_dragon(n = 11, angle = 45, w = 0.6);
+linear_extrude(1) levy_dragon(n=11, angle=45, w=0.6);

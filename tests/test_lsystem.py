@@ -97,7 +97,10 @@ def main():
         out = os.path.join(tmp, "out.echo")
 
         run(openscad, os.path.join(TESTS, "behaviour.scad"), out)
-        got = dict(re.findall(r'ECHO: "CHECK (\S+) (.*)"', open(out).read()))
+        text = open(out).read()
+        bad = [l for l in text.splitlines() if l.startswith(("ERROR", "WARNING"))]
+        report("behaviour.scad evaluates", not bad, bad[:1] or "clean")
+        got = dict(re.findall(r'ECHO: "CHECK (\S+) (.*)"', text))
         for name, want in EXPECTED.items():
             report(f"behaviour: {name}", got.get(name) == want, got.get(name))
 
