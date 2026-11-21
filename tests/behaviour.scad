@@ -2,14 +2,14 @@
 include <../l_systems.scad>
 
 function expand(t, n, valid = "FM-+[]") =
-  let (p = t[2], tb = create_lookup(t[0], t[1], _ls_param(p, "draw_chars", "F"), _ls_param(p, "move_chars", "M"), valid))
-  apply_rules(t[0], tb[0], tb[1], n);
+    let (p = t[2], tb = create_lookup(t[0], t[1], _ls_param(p, "draw_chars", "F"), _ls_param(p, "move_chars", "M"), valid))
+    apply_rules(t[0], tb[0], tb[1], n);
 function segs2(t, n) = let (p = t[2]) generate_coords(expand(t, n), _ls_param(p, "angle", 90), [0, 0], _ls_param(p, "heading", 0), false, 0.4);
 function count2(t, n) = len(segs2(t, n)) / 4;
 V3 = "FM-+[]&^\\/|!{}.;,";
 function walk3(axiom, rules, n, angle, T = undef, e = 0, bt = 1) =
-  let (tb = create_lookup(axiom, rules, "F", "M", V3))
-  generate_coords_3d(apply_rules(axiom, tb[0], tb[1], n), angle, [0, 0, 0], 0.7, 1, T, e, undef, undef, bt);
+    let (tb = create_lookup(axiom, rules, "F", "M", V3))
+    generate_coords_3d(apply_rules(axiom, tb[0], tb[1], n), angle, [0, 0, 0], 0.7, 1, T, e, undef, undef, bt);
 function r6(v) = is_list(v) ? [for (x = v) r6(x)] : round(v * 1e6) / 1e6;
 
 // Segment counts that follow from the rules

@@ -27,6 +27,6 @@ facets = 32; // [8:64]
 $ls_rounded = false; // clean cone-to-cone joints, no sphere beads
 $fn = facets;
 
-color("dimgray") translate([ 0, 0, -base_height / 2 ]) cylinder(h = base_height, d = base_diameter, $fn = 64);
+color("dimgray") translate([0, 0, -base_height / 2]) cylinder(h=base_height, d=base_diameter, $fn=64);
 
-L_System3D(printable_tree(), n = levels, angle = spread_angle, w = trunk_width, branch_taper = branch_taper);
+L_System3D(printable_tree(), n=levels, angle=spread_angle, w=trunk_width, branch_taper=branch_taper);
